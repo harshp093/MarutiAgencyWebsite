@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String   @unique
+  phone      String?
+  role       String   @default("USER") // USER, ADMIN
+  createdAt  DateTime @default(now())
+  bookings   Booking[]
+}
+
+model Booking {
+  id             String   @id @default(cuid())
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  serviceType    String   // CAR, FLIGHT, BUS, TOUR, CORPORATE, GROUP
+  status         String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  bookingDate    DateTime @default(now())
+  travelDate     DateTime?
+  fromCity       String?
+  toCity         String?
+  price          Float?
+  paymentStatus  String   @default("UNPAID") // UNPAID, PAID
+  detailsJson    Json?    // Specific details based on service type
+}
+
+model Car {
+  id            String   @id @default(cuid())
+  model         String
+  category      String   // HATCHBACK, SEDAN, SUV, LUXURY, VAN
+  pricePerDay   Float
+  available     Boolean  @default(true)
+  city          String
+  featuresJson  Json     // e.g. { fuel: "Petrol", seats: 5, ac: true }
+  imagesJson    Json
+  isSelfDrive   Boolean  @default(false)
+}
+
+model TourPackage {
+  id                 String   @id @default(cuid())
+  name               String
+  type               String   // LUXURY, BUDGET
+  destination        String
+  durationDays       Int
+  pricePerPerson     Float
+  inclusionsJson     Json
+  itineraryJson      Json
+  imagesJson         Json
+  availableDatesJson Json
+}
+
+model Parcel {
+  id           String   @id @default(cuid())
+  trackingId   String   @unique
+  senderName   String
+  receiverName String
+  fromCity     String
+  toCity       String
+  status       String   @default("PICKED_UP") // PICKED_UP, IN_TRANSIT, OUT_FOR_DELIVERY, DELIVERED
+  weight       Float?
+  createdAt    DateTime @default(now())
+  events       ParcelEvent[]
+}
+
+model ParcelEvent {
+  id        String   @id @default(cuid())
+  parcelId  String
+  parcel    Parcel   @relation(fields: [parcelId], references: [id])
+  eventType String   // e.g. "Arrived at Hub"
+  location  String
+  timestamp DateTime @default(now())
+  note      String?
+}
