@@ -7,7 +7,7 @@ import Link from "next/link";
 const services = [
   {
     id: "car-rental",
-    href: "/services/car-rental",
+    href: "/contact",
     icon: "🚙",
     title: "Car Rental",
     subtitle: "Drive Anywhere",
@@ -21,7 +21,7 @@ const services = [
   },
   {
     id: "flights",
-    href: "/services/flights",
+    href: "/contact",
     icon: "✈️",
     title: "Flight Booking",
     subtitle: "Fly Premium",
@@ -35,7 +35,7 @@ const services = [
   },
   {
     id: "tours",
-    href: "/services/tours",
+    href: "/contact",
     icon: "🗺️",
     title: "Tours & Packages",
     subtitle: "Explore India",
@@ -49,7 +49,7 @@ const services = [
   },
   {
     id: "corporate",
-    href: "/services/corporate-travel",
+    href: "/contact",
     icon: "💼",
     title: "Corporate Travel",
     subtitle: "Business Ready",
@@ -161,7 +161,7 @@ export default function ServicesSection() {
   const headingInView = useInView(headingRef, { once: true, margin: "-60px" });
 
   return (
-    <section id="services" className="relative bg-[#050C14] py-24 px-6 md:px-16 lg:px-24 overflow-hidden">
+    <section id="services" className="relative bg-[#050C14] py-16 sm:py-24 px-4 sm:px-8 md:px-16 lg:px-24 overflow-hidden">
       {/* Background grid texture */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -172,7 +172,7 @@ export default function ServicesSection() {
       />
 
       {/* Section heading */}
-      <div ref={headingRef} className="text-center mb-16">
+      <div ref={headingRef} className="text-center mb-10 sm:mb-16">
         <motion.p
           className="text-[11px] uppercase tracking-[0.35em] text-[#FFD700] mb-4"
           style={{ fontFamily: "var(--font-syne)" }}
@@ -211,7 +211,7 @@ export default function ServicesSection() {
       </div>
 
       {/* Services grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-6xl mx-auto">
         {services.map((svc, i) => (
           <ServiceCard key={svc.id} svc={svc} index={i} />
         ))}

@@ -1,121 +1,125 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { City, searchCities, CITIES } from "@/lib/cities";
-import { waUrl, waFlightMsg, waCarMsg, waTourMsg, waCorporateMsg } from "@/lib/config";
+import { waUrl, waCarMsg, waTourMsg, waCorporateMsg } from "@/lib/config";
 
 export type TabId = "flight" | "car" | "tour" | "corporate";
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: "flight", label: "Flights", icon: "✈️" },
-  { id: "car", label: "Car Rental", icon: "🚗" },
-  { id: "tour", label: "Tours", icon: "🗺️" },
+  { id: "flight",    label: "Flights",   icon: "✈️" },
+  { id: "car",       label: "Car Rental",icon: "🚗" },
+  { id: "tour",      label: "Tours",     icon: "🗺️" },
   { id: "corporate", label: "Corporate", icon: "💼" },
 ];
 
 const POPULAR = CITIES.filter((c) => c.popular).slice(0, 6);
 
-// ─── City Dropdown ────────────────────────────────────────────────────────────
+// ─── Shared styles ──────────────────────────────────────────────────────────────
+const FIELD_STYLE: React.CSSProperties = {
+  background: "rgba(5, 12, 20, 0.70)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5)",
+};
+
+const LABEL_CLASS =
+  "block text-[10px] uppercase tracking-[0.3em] text-white/60 mb-2 font-bold";
+
+// ─── CityDropdown ───────────────────────────────────────────────────────────────
 function CityDropdown({
-  label, placeholder, value, onChange, accentColor,
+  label, placeholder, value, onChange, accentColor, icon,
 }: {
   label: string; placeholder: string; value: string;
-  onChange: (city: City) => void; accentColor: string;
+  onChange: (city: City) => void; accentColor: string; icon?: string;
 }) {
-  const [query, setQuery] = useState(value);
-  const [open, setOpen] = useState(false);
+  const [query, setQuery]   = useState(value);
+  const [open, setOpen]     = useState(false);
   const [results, setResults] = useState<City[]>(POPULAR);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setQuery(value); }, [value]);
+  useEffect(() => { setResults(searchCities(query)); }, [query]);
 
-  useEffect(() => {
-    setResults(searchCities(query));
-  }, [query]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+  const handleOutside = useCallback((e: MouseEvent) => {
+    if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
   }, []);
 
+  useEffect(() => {
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [handleOutside]);
+
+  const matched = query && results.length > 0 && results[0].name.toLowerCase() === query.toLowerCase();
+
   return (
-    <div ref={ref} className="relative flex-1 min-w-[200px]">
-      <label className="block text-[10px] uppercase tracking-[0.28em] text-white/70 mb-1.5 font-bold drop-shadow-md"
-        style={{ fontFamily: "var(--font-syne)" }}>
-        {label}
+    <div ref={ref} className="relative flex-1 min-w-0">
+      <label className={LABEL_CLASS} style={{ fontFamily: "var(--font-syne)" }}>
+        {icon && <span className="mr-1">{icon}</span>}{label}
       </label>
-      <div
-        className="relative cursor-pointer"
-        onClick={() => setOpen(true)}
-      >
+      <div className="relative" onClick={() => setOpen(true)}>
         <input
           type="text"
           value={query}
           placeholder={placeholder}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          className="w-full bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white placeholder-white/60 text-sm focus:outline-none focus:bg-white/30 transition-all pr-16 shadow-inner"
-          style={{ fontFamily: "var(--font-syne)" }}
+          className="w-full rounded-xl px-4 py-3.5 text-white placeholder-white/40 text-sm focus:outline-none transition-all"
+          style={{ ...FIELD_STYLE, fontFamily: "var(--font-syne)", paddingRight: matched ? "4rem" : "1rem" }}
         />
-        {query && results.length > 0 && results[0].name.toLowerCase() === query.toLowerCase() && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm"
-            style={{ color: "#fff", background: accentColor }}>
-            {results[0]?.code || ""}
+        {/* Airport code badge */}
+        {matched && (
+          <span
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black px-2 py-0.5 rounded-lg"
+            style={{ color: "#050C14", background: accentColor, fontFamily: "var(--font-bebas)", letterSpacing: "0.1em" }}
+          >
+            {results[0]?.code}
           </span>
         )}
       </div>
 
+      {/* Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            initial={{ opacity: 0, y: 6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.97 }}
-            transition={{ duration: 0.18 }}
-            className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl overflow-hidden shadow-2xl backdrop-blur-3xl"
-            style={{ background: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.4)" }}
+            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 mt-2 z-[100] rounded-2xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto"
+            style={{ background: "rgba(8, 18, 30, 0.97)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(20px)" }}
           >
-            <div className="p-2">
-              {!query && (
-                <p className="text-[10px] uppercase tracking-widest text-gray-500 px-3 py-2 font-bold"
-                  style={{ fontFamily: "var(--font-syne)" }}>
-                  Popular Cities
-                </p>
-              )}
-              {results.length === 0 && (
-                <p className="text-gray-500 text-sm px-3 py-4 text-center">No cities found</p>
-              )}
-              {results.map((city) => (
-                <button
-                  key={city.code}
-                  onClick={() => {
-                    onChange(city);
-                    setQuery(city.name);
-                    setOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-black/5 transition-colors text-left group"
+            {!query && (
+              <p className="text-[10px] uppercase tracking-widest text-white/40 px-4 py-3 font-bold border-b border-white/5"
+                style={{ fontFamily: "var(--font-syne)" }}>
+                Popular Cities
+              </p>
+            )}
+            {results.length === 0 && (
+              <p className="text-white/50 text-sm px-4 py-5 text-center">No cities found</p>
+            )}
+            {results.map((city) => (
+              <button
+                key={city.code}
+                onClick={() => { onChange(city); setQuery(city.name); setOpen(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/10 transition-colors text-left border-b border-white/5 last:border-0"
+              >
+                <span
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 text-[#050C14]"
+                  style={{ background: accentColor, fontFamily: "var(--font-bebas)", letterSpacing: "0.05em" }}
                 >
-                  <span className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 text-white shadow-sm"
-                    style={{ background: accentColor, fontFamily: "var(--font-bebas)" }}>
-                    {city.code}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-black text-sm font-bold truncate" style={{ fontFamily: "var(--font-syne)" }}>
-                      {city.name}
-                    </p>
-                    <p className="text-gray-600 text-xs truncate">{city.state}</p>
-                  </div>
-                  {city.popular && (
-                    <span className="text-[9px] text-gray-400 flex-shrink-0">★</span>
-                  )}
-                </button>
-              ))}
-            </div>
+                  {city.code}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-bold truncate" style={{ fontFamily: "var(--font-syne)" }}>
+                    {city.name}
+                  </p>
+                  <p className="text-white/40 text-xs truncate">{city.state}</p>
+                </div>
+                {city.popular && <span className="text-yellow-400 text-xs flex-shrink-0">★</span>}
+              </button>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
@@ -123,82 +127,125 @@ function CityDropdown({
   );
 }
 
-// ─── Main SearchBar ───────────────────────────────────────────────────────────
-export default function SearchBar({ 
-  activeTab, 
-  onTabChange 
-}: { 
-  activeTab?: TabId;
-  onTabChange?: (tab: TabId) => void;
+// ─── Reusable Field Wrapper ─────────────────────────────────────────────────────
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <label className={LABEL_CLASS} style={{ fontFamily: "var(--font-syne)" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+// ─── PaxCounter ─────────────────────────────────────────────────────────────────
+function PaxCounter({ value, min, max, onChange }: { value: number; min: number; max: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center rounded-xl overflow-hidden h-[46px]" style={FIELD_STYLE}>
+      <button
+        onClick={() => onChange(Math.max(min, value - 1))}
+        className="px-4 h-full text-white/70 hover:text-white hover:bg-white/5 text-lg font-bold transition-colors flex-shrink-0"
+      >−</button>
+      <span className="flex-1 text-center text-white text-sm font-bold" style={{ fontFamily: "var(--font-syne)" }}>{value}</span>
+      <button
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className="px-4 h-full text-white/70 hover:text-white hover:bg-white/5 text-lg font-bold transition-colors flex-shrink-0"
+      >+</button>
+    </div>
+  );
+}
+
+// ─── SwapButton ──────────────────────────────────────────────────────────────────
+function SwapBtn({ onClick, accent }: { onClick: () => void; accent: string }) {
+  return (
+    <motion.button
+      whileTap={{ rotate: 180 }}
+      onClick={onClick}
+      className="hidden md:flex w-10 h-10 rounded-full items-center justify-center flex-shrink-0 text-[#050C14] font-bold text-lg shadow-lg hover:scale-110 transition-transform self-end mb-[3px]"
+      style={{ background: accent }}
+      title="Swap cities"
+    >
+      ⇄
+    </motion.button>
+  );
+}
+
+// ─── SearchBtn ───────────────────────────────────────────────────────────────────
+function SearchBtn({ onClick, label, gradient, accent }: { onClick: () => void; label: string; gradient: string; accent: string }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className="w-full h-[46px] rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-xl flex-shrink-0"
+      style={{ background: gradient, color: "#050C14", fontFamily: "var(--font-syne)", boxShadow: `0 8px 30px ${accent}50` }}
+    >
+      {label} →
+    </motion.button>
+  );
+}
+
+// ─── Main SearchBar ─────────────────────────────────────────────────────────────
+export default function SearchBar({
+  activeTab, onTabChange,
+}: {
+  activeTab?: TabId; onTabChange?: (tab: TabId) => void;
 }) {
   const [internalTab, setInternalTab] = useState<TabId>("flight");
-  
-  // Use controlled or uncontrolled tab state
   const tab = activeTab || internalTab;
-  const setTab = (newTab: TabId) => {
-    if (onTabChange) onTabChange(newTab);
-    else setInternalTab(newTab);
-  };
+  const setTab = (t: TabId) => { if (onTabChange) onTabChange(t); else setInternalTab(t); };
 
-  // Separate states per tab to solve the issue of fields persisting across tabs
   const [flightState, setFlightState] = useState({ from: null as City | null, to: null as City | null, date: "", pax: 1, type: "one-way" as "one-way" | "return" });
-  const [carState, setCarState] = useState({ from: null as City | null, to: null as City | null, date: "", type: "SUV" });
-  const [tourState, setTourState] = useState({ dest: null as City | null, date: "", pax: 2 });
-  const [corpState, setCorpState] = useState({ from: null as City | null, to: null as City | null, date: "", pax: 1, company: "" });
+  const [carState,    setCarState]    = useState({ from: null as City | null, to: null as City | null, date: "", type: "SUV" });
+  const [tourState,   setTourState]   = useState({ dest: null as City | null, date: "", pax: 2 });
+  const [corpState,   setCorpState]   = useState({ from: null as City | null, to: null as City | null, date: "", pax: 1, company: "" });
 
   const router = useRouter();
 
-  const accent = tab === "flight" ? "#FFD700"
-    : tab === "car" ? "#52B788"
-    : tab === "tour" ? "#FF7043"
-    : "#4FC3F7";
-
-  const gradient = tab === "flight" ? "linear-gradient(135deg, #FFD700 0%, #FFB347 100%)"
-    : tab === "car" ? "linear-gradient(135deg, #52B788 0%, #4FC3F7 100%)"
-    : tab === "tour" ? "linear-gradient(135deg, #FF7043 0%, #FFD700 100%)"
-    : "linear-gradient(135deg, #4FC3F7 0%, #52B788 100%)";
-
-  const swapFlight = () => setFlightState(s => ({ ...s, from: s.to, to: s.from }));
-  const swapCorp = () => setCorpState(s => ({ ...s, from: s.to, to: s.from }));
+  const accent   = tab === "flight" ? "#FFD700" : tab === "car" ? "#52B788" : tab === "tour" ? "#FF7043" : "#4FC3F7";
+  const gradient = tab === "flight" ? "linear-gradient(135deg,#FFD700,#FFB347)" : tab === "car" ? "linear-gradient(135deg,#52B788,#4FC3F7)" : tab === "tour" ? "linear-gradient(135deg,#FF7043,#FFD700)" : "linear-gradient(135deg,#4FC3F7,#52B788)";
 
   const handleSearch = () => {
     if (tab === "flight") {
       if (!flightState.from || !flightState.to || !flightState.date) return;
-      const params = new URLSearchParams({
-        from: flightState.from.name, fromCode: flightState.from.code,
-        to: flightState.to.name, toCode: flightState.to.code,
-        date: flightState.date, pax: String(flightState.pax),
-      });
-      router.push(`/services/flights/results?${params}`);
+      const p = new URLSearchParams({ from: flightState.from.name, fromCode: flightState.from.code, to: flightState.to.name, toCode: flightState.to.code, date: flightState.date, pax: String(flightState.pax) });
+      router.push(`/services/flights/results?${p}`);
     } else if (tab === "car") {
-      const msg = waCarMsg(carState.from?.name || "—", carState.to?.name || "—", carState.date, carState.type);
-      window.open(waUrl(msg), "_blank");
+      window.open(waUrl(waCarMsg(carState.from?.name || "—", carState.to?.name || "—", carState.date, carState.type)), "_blank");
     } else if (tab === "tour") {
-      const msg = waTourMsg(tourState.dest?.name || "—", tourState.date, tourState.pax);
-      window.open(waUrl(msg), "_blank");
+      window.open(waUrl(waTourMsg(tourState.dest?.name || "—", tourState.date, tourState.pax)), "_blank");
     } else {
-      const msg = waCorporateMsg(corpState.from?.name || "—", corpState.to?.name || "—", corpState.date, corpState.pax, corpState.company || "My Company");
-      window.open(waUrl(msg), "_blank");
+      window.open(waUrl(waCorporateMsg(corpState.from?.name || "—", corpState.to?.name || "—", corpState.date, corpState.pax, corpState.company || "My Company")), "_blank");
     }
   };
 
   const today = new Date().toISOString().split("T")[0];
 
+  const dateInput = (val: string, min: string, onChange: (v: string) => void) => (
+    <input
+      type="date" value={val} min={min}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-xl px-4 text-white text-sm focus:outline-none h-[46px]"
+      style={{ ...FIELD_STYLE, colorScheme: "dark", fontFamily: "var(--font-syne)" }}
+    />
+  );
+
   return (
-    <div className="w-full max-w-[1000px] z-20">
-      {/* Tab bar */}
-      <div className="flex gap-2 mb-4">
+    <div className="w-full max-w-5xl z-20">
+
+      {/* ── Tab Bar ── */}
+      <div className="flex gap-2 mb-5 flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className="relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-300 shadow-lg"
+            className="flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-300"
             style={{
               fontFamily: "var(--font-syne)",
-              color: tab === t.id ? "#050C14" : "#ffffff",
-              background: tab === t.id ? accent : "rgba(255,255,255,0.15)",
-              border: `1px solid ${tab === t.id ? "transparent" : "rgba(255,255,255,0.3)"}`,
-              backdropFilter: "blur(12px)",
+              color: tab === t.id ? "#050C14" : "rgba(255,255,255,0.85)",
+              background: tab === t.id ? accent : "rgba(255,255,255,0.08)",
+              border: `1.5px solid ${tab === t.id ? "transparent" : "rgba(255,255,255,0.2)"}`,
+              backdropFilter: "blur(16px)",
+              boxShadow: tab === t.id ? `0 4px 20px ${accent}50` : "none",
             }}
           >
             <span>{t.icon}</span>
@@ -207,172 +254,207 @@ export default function SearchBar({
         ))}
       </div>
 
-      {/* Card (Frosted White Glass) */}
+      {/* ── Search Card ── */}
       <div
-        className="relative rounded-[2rem] p-6 shadow-[0_32px_80px_rgba(0,0,0,0.4)]"
+        className="rounded-2xl sm:rounded-3xl shadow-2xl overflow-visible"
         style={{
-          background: "rgba(255, 255, 255, 0.15)",
+          background: "rgba(5, 12, 20, 0.75)",
           backdropFilter: "blur(40px)",
-          border: "1px solid rgba(255, 255, 255, 0.4)",
+          WebkitBackdropFilter: "blur(40px)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
         }}
       >
-        {/* Top accent line */}
-        <div className="absolute -top-px left-12 right-12 h-[2px] rounded-full transition-all duration-500 shadow-[0_0_12px_rgba(255,255,255,0.8)]"
-          style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
+        {/* Accent top border */}
+        <div
+          className="h-[2px] w-full rounded-t-3xl"
+          style={{ background: `linear-gradient(90deg, transparent 5%, ${accent} 50%, transparent 95%)` }}
+        />
 
-        <AnimatePresence mode="wait">
-          {/* FLIGHT */}
-          {tab === "flight" && (
-            <motion.div key="flight" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
-              <div className="flex items-center gap-4 mb-5">
-                {["one-way", "return"].map((t) => (
-                  <button key={t} onClick={() => setFlightState(s => ({ ...s, type: t as any }))}
-                    className="flex items-center gap-2 text-sm font-bold transition-colors drop-shadow-md"
-                    style={{ fontFamily: "var(--font-syne)", color: flightState.type === t ? accent : "rgba(255,255,255,0.7)" }}>
-                    <span className="w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white/10"
-                      style={{ borderColor: flightState.type === t ? accent : "rgba(255,255,255,0.4)" }}>
-                      {flightState.type === t && <span className="w-2 h-2 rounded-full" style={{ background: accent }} />}
-                    </span>
-                    {t === "one-way" ? "One Way" : "Return"}
-                  </button>
-                ))}
-              </div>
+        <div className="p-5 sm:p-6 lg:p-7">
+          <AnimatePresence mode="wait">
 
-              {/* Grid with wider location inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-[1.5fr_auto_1.5fr_1fr_1fr_auto] gap-4 items-end">
-                <CityDropdown label="From" placeholder="City or Airport" value={flightState.from?.name || ""} onChange={(v) => setFlightState(s => ({ ...s, from: v }))} accentColor={accent} />
-                <motion.button whileTap={{ rotate: 180 }} onClick={swapFlight}
-                  className="hidden md:flex w-10 h-10 rounded-full items-center justify-center mb-1 flex-shrink-0 transition-all hover:scale-110 shadow-lg text-white"
-                  style={{ background: accent, border: `2px solid rgba(255,255,255,0.5)` }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 5l-1.5 1.5"/><path d="M21 15l-4-4-4 4"/><path d="M21 15v-5.5a2.5 2.5 0 0 0-5 0v5.5"/><path d="M3 15l4 4 4-4"/></svg>
-                </motion.button>
-                <CityDropdown label="To" placeholder="City or Airport" value={flightState.to?.name || ""} onChange={(v) => setFlightState(s => ({ ...s, to: v }))} accentColor={accent} />
+            {/* ══════════ FLIGHT ══════════ */}
+            {tab === "flight" && (
+              <motion.div key="flight" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>{flightState.type === "return" ? "Depart" : "Date"}</label>
-                  <input type="date" value={flightState.date} min={today} onChange={(e) => setFlightState(s => ({ ...s, date: e.target.value }))}
-                    className="bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none w-full shadow-inner"
-                    style={{ colorScheme: "dark", fontFamily: "var(--font-syne)" }} />
+                {/* Trip type toggle */}
+                <div className="flex items-center gap-5 mb-5">
+                  {(["one-way", "return"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setFlightState((s) => ({ ...s, type: t }))}
+                      className="flex items-center gap-2 text-sm font-bold transition-all"
+                      style={{ fontFamily: "var(--font-syne)", color: flightState.type === t ? accent : "rgba(255,255,255,0.5)" }}
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
+                        style={{ borderColor: flightState.type === t ? accent : "rgba(255,255,255,0.3)", background: flightState.type === t ? `${accent}20` : "transparent" }}
+                      >
+                        {flightState.type === t && <span className="w-2 h-2 rounded-full" style={{ background: accent }} />}
+                      </span>
+                      {t === "one-way" ? "One Way" : "Return"}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Pax</label>
-                  <div className="flex items-center gap-3 bg-white/20 border border-white/40 rounded-xl px-4 py-[13px] w-full shadow-inner">
-                    <button onClick={() => setFlightState(s => ({ ...s, pax: Math.max(1, s.pax - 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">−</button>
-                    <span className="flex-1 text-center text-white text-sm font-bold" style={{ fontFamily: "var(--font-syne)" }}>{flightState.pax}</span>
-                    <button onClick={() => setFlightState(s => ({ ...s, pax: Math.min(9, s.pax + 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">+</button>
+                {/* ROW 1: FROM — swap — TO (full width, city fields get max space) */}
+                <div className="flex items-end gap-2 sm:gap-3 mb-4">
+                  <CityDropdown
+                    label="From" placeholder="Departure city or airport"
+                    value={flightState.from?.name || ""}
+                    onChange={(v) => setFlightState((s) => ({ ...s, from: v }))}
+                    accentColor={accent} icon="🛫"
+                  />
+                  <SwapBtn onClick={() => setFlightState((s) => ({ ...s, from: s.to, to: s.from }))} accent={accent} />
+                  <CityDropdown
+                    label="To" placeholder="Destination city or airport"
+                    value={flightState.to?.name || ""}
+                    onChange={(v) => setFlightState((s) => ({ ...s, to: v }))}
+                    accentColor={accent} icon="🛬"
+                  />
+                </div>
+
+                {/* ROW 2: Date — Pax — Search */}
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-3">
+                  <Field label={flightState.type === "return" ? "Departure Date" : "Travel Date"}>
+                    {dateInput(flightState.date, today, (v) => setFlightState((s) => ({ ...s, date: v })))}
+                  </Field>
+                  <Field label="Passengers">
+                    <PaxCounter value={flightState.pax} min={1} max={9} onChange={(v) => setFlightState((s) => ({ ...s, pax: v }))} />
+                  </Field>
+                  <div className="flex flex-col justify-end">
+                    <SearchBtn onClick={handleSearch} label="Search Flights" gradient={gradient} accent={accent} />
                   </div>
                 </div>
+              </motion.div>
+            )}
 
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleSearch}
-                  className="rounded-xl px-8 py-4 font-bold text-base flex items-center justify-center gap-2 shadow-xl"
-                  style={{ background: gradient, color: "#050C14", fontFamily: "var(--font-syne)", boxShadow: `0 8px 30px ${accent}60` }}>
-                  <span>Search</span><span>→</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
+            {/* ══════════ CAR ══════════ */}
+            {tab === "car" && (
+              <motion.div key="car" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
 
-          {/* CAR */}
-          {tab === "car" && (
-            <motion.div key="car" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
-              <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1.5fr_1fr_1fr_auto] gap-4 items-end mt-4">
-                <CityDropdown label="Pickup City" placeholder="City or Location" value={carState.from?.name || ""} onChange={(v) => setCarState(s => ({ ...s, from: v }))} accentColor={accent} />
-                <CityDropdown label="Drop City" placeholder="City or Location" value={carState.to?.name || ""} onChange={(v) => setCarState(s => ({ ...s, to: v }))} accentColor={accent} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Date</label>
-                  <input type="date" value={carState.date} min={today} onChange={(e) => setCarState(s => ({ ...s, date: e.target.value }))}
-                    className="bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none w-full shadow-inner"
-                    style={{ colorScheme: "dark", fontFamily: "var(--font-syne)" }} />
+                {/* ROW 1: Pickup — swap — Drop */}
+                <div className="flex items-end gap-2 sm:gap-3 mb-4">
+                  <CityDropdown
+                    label="Pickup City" placeholder="Where do you want the car?"
+                    value={carState.from?.name || ""}
+                    onChange={(v) => setCarState((s) => ({ ...s, from: v }))}
+                    accentColor={accent} icon="📍"
+                  />
+                  <SwapBtn onClick={() => setCarState((s) => ({ ...s, from: s.to, to: s.from }))} accent={accent} />
+                  <CityDropdown
+                    label="Drop City" placeholder="Where to drop?"
+                    value={carState.to?.name || ""}
+                    onChange={(v) => setCarState((s) => ({ ...s, to: v }))}
+                    accentColor={accent} icon="🏁"
+                  />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Car Type</label>
-                  <select value={carState.type} onChange={(e) => setCarState(s => ({ ...s, type: e.target.value }))}
-                    className="bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white text-sm font-bold focus:outline-none appearance-none shadow-inner"
-                    style={{ colorScheme: "dark", fontFamily: "var(--font-syne)" }}>
-                    {["SUV", "Sedan", "Hatchback", "Tempo Traveller", "Luxury", "Mini Bus"].map(t => (
-                      <option key={t} value={t} style={{ background: "#050C14", color: "white" }}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleSearch}
-                  className="rounded-xl px-8 py-4 font-bold text-base shadow-xl"
-                  style={{ background: gradient, color: "#050C14", fontFamily: "var(--font-syne)", boxShadow: `0 8px 30px ${accent}60` }}>
-                  Find Car
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
 
-          {/* TOUR */}
-          {tab === "tour" && (
-            <motion.div key="tour" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
-              <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-4 items-end mt-4">
-                <CityDropdown label="Destination" placeholder="Goa, Kerala, Rajasthan..." value={tourState.dest?.name || ""} onChange={(v) => setTourState(s => ({ ...s, dest: v }))} accentColor={accent} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Travel Date</label>
-                  <input type="date" value={tourState.date} min={today} onChange={(e) => setTourState(s => ({ ...s, date: e.target.value }))}
-                    className="bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none w-full shadow-inner"
-                    style={{ colorScheme: "dark", fontFamily: "var(--font-syne)" }} />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Travelers</label>
-                  <div className="flex items-center gap-3 bg-white/20 border border-white/40 rounded-xl px-4 py-[13px] w-full shadow-inner">
-                    <button onClick={() => setTourState(s => ({ ...s, pax: Math.max(1, s.pax - 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">−</button>
-                    <span className="flex-1 text-center text-white text-sm font-bold" style={{ fontFamily: "var(--font-syne)" }}>{tourState.pax}</span>
-                    <button onClick={() => setTourState(s => ({ ...s, pax: Math.min(50, s.pax + 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">+</button>
+                {/* ROW 2: Date — Car Type — Search */}
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px_auto] gap-3">
+                  <Field label="Pickup Date">
+                    {dateInput(carState.date, today, (v) => setCarState((s) => ({ ...s, date: v })))}
+                  </Field>
+                  <Field label="Car Type">
+                    <select
+                      value={carState.type}
+                      onChange={(e) => setCarState((s) => ({ ...s, type: e.target.value }))}
+                      className="w-full rounded-xl px-4 text-white text-sm font-bold focus:outline-none appearance-none h-[46px]"
+                      style={{ ...FIELD_STYLE, colorScheme: "dark", fontFamily: "var(--font-syne)" }}
+                    >
+                      {["SUV", "Sedan", "Hatchback", "Tempo Traveller", "Luxury", "Mini Bus"].map((t) => (
+                        <option key={t} value={t} style={{ background: "#050C14", color: "white" }}>{t}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <div className="flex flex-col justify-end">
+                    <SearchBtn onClick={handleSearch} label="Find Car" gradient={gradient} accent={accent} />
                   </div>
                 </div>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleSearch}
-                  className="rounded-xl px-8 py-4 font-bold text-base shadow-xl"
-                  style={{ background: gradient, color: "#050C14", fontFamily: "var(--font-syne)", boxShadow: `0 8px 30px ${accent}60` }}>
-                  Explore
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
-          {/* CORPORATE */}
-          {tab === "corporate" && (
-            <motion.div key="corporate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
-              <div className="flex gap-4 mb-4 mt-2">
-                 <div className="flex-1 max-w-sm">
-                   <input type="text" placeholder="Company Name" value={corpState.company} onChange={(e) => setCorpState(s => ({ ...s, company: e.target.value }))}
-                     className="w-full bg-white/20 border border-white/40 rounded-xl px-4 py-3 text-white placeholder-white/60 text-sm focus:outline-none focus:bg-white/30 transition-all shadow-inner font-bold"
-                     style={{ fontFamily: "var(--font-syne)" }} />
-                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-[1.5fr_auto_1.5fr_1fr_1fr_auto] gap-4 items-end">
-                <CityDropdown label="From" placeholder="Origin City" value={corpState.from?.name || ""} onChange={(v) => setCorpState(s => ({ ...s, from: v }))} accentColor={accent} />
-                <motion.button whileTap={{ rotate: 180 }} onClick={swapCorp}
-                  className="hidden md:flex w-10 h-10 rounded-full items-center justify-center mb-1 flex-shrink-0 transition-all hover:scale-110 shadow-lg text-white"
-                  style={{ background: accent, border: `2px solid rgba(255,255,255,0.5)` }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 5l-1.5 1.5"/><path d="M21 15l-4-4-4 4"/><path d="M21 15v-5.5a2.5 2.5 0 0 0-5 0v5.5"/><path d="M3 15l4 4 4-4"/></svg>
-                </motion.button>
-                <CityDropdown label="To" placeholder="Destination City" value={corpState.to?.name || ""} onChange={(v) => setCorpState(s => ({ ...s, to: v }))} accentColor={accent} />
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Date</label>
-                  <input type="date" value={corpState.date} min={today} onChange={(e) => setCorpState(s => ({ ...s, date: e.target.value }))}
-                    className="bg-white/20 border border-white/40 rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none w-full shadow-inner"
-                    style={{ colorScheme: "dark", fontFamily: "var(--font-syne)" }} />
+            {/* ══════════ TOUR ══════════ */}
+            {tab === "tour" && (
+              <motion.div key="tour" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+
+                {/* ROW 1: Destination (full width) */}
+                <div className="mb-4">
+                  <CityDropdown
+                    label="Destination" placeholder="Goa, Kerala, Rajasthan, Manali..."
+                    value={tourState.dest?.name || ""}
+                    onChange={(v) => setTourState((s) => ({ ...s, dest: v }))}
+                    accentColor={accent} icon="🗺️"
+                  />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase tracking-[0.28em] text-white/70 font-bold drop-shadow-md" style={{ fontFamily: "var(--font-syne)" }}>Pax</label>
-                  <div className="flex items-center gap-3 bg-white/20 border border-white/40 rounded-xl px-4 py-[13px] w-full shadow-inner">
-                    <button onClick={() => setCorpState(s => ({ ...s, pax: Math.max(1, s.pax - 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">−</button>
-                    <span className="flex-1 text-center text-white text-sm font-bold" style={{ fontFamily: "var(--font-syne)" }}>{corpState.pax}</span>
-                    <button onClick={() => setCorpState(s => ({ ...s, pax: Math.min(50, s.pax + 1) }))} className="text-white/80 hover:text-white text-xl font-bold leading-none">+</button>
+
+                {/* ROW 2: Date — Travelers — Search */}
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-3">
+                  <Field label="Travel Date">
+                    {dateInput(tourState.date, today, (v) => setTourState((s) => ({ ...s, date: v })))}
+                  </Field>
+                  <Field label="Travelers">
+                    <PaxCounter value={tourState.pax} min={1} max={50} onChange={(v) => setTourState((s) => ({ ...s, pax: v }))} />
+                  </Field>
+                  <div className="flex flex-col justify-end">
+                    <SearchBtn onClick={handleSearch} label="Explore Tours" gradient={gradient} accent={accent} />
                   </div>
                 </div>
-                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleSearch}
-                  className="rounded-xl px-8 py-4 font-bold text-base shadow-xl"
-                  style={{ background: gradient, color: "#050C14", fontFamily: "var(--font-syne)", boxShadow: `0 8px 30px ${accent}60` }}>
-                  Get Quote
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+
+            {/* ══════════ CORPORATE ══════════ */}
+            {tab === "corporate" && (
+              <motion.div key="corporate" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+
+                {/* Company name */}
+                <div className="mb-4">
+                  <Field label="Company Name">
+                    <input
+                      type="text" placeholder="Enter your company name"
+                      value={corpState.company}
+                      onChange={(e) => setCorpState((s) => ({ ...s, company: e.target.value }))}
+                      className="w-full rounded-xl px-4 text-white placeholder-white/40 text-sm font-bold focus:outline-none h-[46px]"
+                      style={{ ...FIELD_STYLE, fontFamily: "var(--font-syne)" }}
+                    />
+                  </Field>
+                </div>
+
+                {/* ROW 1: From — swap — To */}
+                <div className="flex items-end gap-2 sm:gap-3 mb-4">
+                  <CityDropdown
+                    label="From" placeholder="Origin city"
+                    value={corpState.from?.name || ""}
+                    onChange={(v) => setCorpState((s) => ({ ...s, from: v }))}
+                    accentColor={accent} icon="🏢"
+                  />
+                  <SwapBtn onClick={() => setCorpState((s) => ({ ...s, from: s.to, to: s.from }))} accent={accent} />
+                  <CityDropdown
+                    label="To" placeholder="Destination city"
+                    value={corpState.to?.name || ""}
+                    onChange={(v) => setCorpState((s) => ({ ...s, to: v }))}
+                    accentColor={accent} icon="📌"
+                  />
+                </div>
+
+                {/* ROW 2: Date — Pax — Search */}
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-3">
+                  <Field label="Travel Date">
+                    {dateInput(corpState.date, today, (v) => setCorpState((s) => ({ ...s, date: v })))}
+                  </Field>
+                  <Field label="Travelers">
+                    <PaxCounter value={corpState.pax} min={1} max={50} onChange={(v) => setCorpState((s) => ({ ...s, pax: v }))} />
+                  </Field>
+                  <div className="flex flex-col justify-end">
+                    <SearchBtn onClick={handleSearch} label="Get Quote" gradient={gradient} accent={accent} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

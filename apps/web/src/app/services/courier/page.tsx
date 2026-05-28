@@ -11,7 +11,7 @@ export default function CourierPage() {
       description="Same-day and next-day courier service across Surat, Gujarat, and Pan-India. Documents, parcels, and fragile items handled with care. Real-time tracking and dedicated support included."
       accentColor="#CE93D8"
       gradient="linear-gradient(135deg, #CE93D8 0%, #FF85A1 100%)"
-      tabId="corporate"
+      tabId="courier"
       features={[
         { icon: "⚡", title: "Same-Day", desc: "Same-day delivery within Surat city and major Gujarat cities." },
         { icon: "🇮🇳", title: "Pan-India", desc: "Reliable delivery network covering all 28 states." },

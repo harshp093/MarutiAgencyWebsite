@@ -1,12 +1,10 @@
 node_modules
 .next
-.env
-.env.*
 .turbo
 dist
 build
 *.log
 packages/db/pgsql
 packages/db/pgsql.zip
-
-.vercel
+apps/api
+docker-compose.yml

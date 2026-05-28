@@ -1,6 +1,6 @@
 // ─── Business Configuration ────────────────────────────────────────────────
 // 👇 Change this to your actual WhatsApp number (with country code, no +)
-export const WHATSAPP_NUMBER = "+91 7778803008";
+export const WHATSAPP_NUMBER = "917778803008";
 
 export const BUSINESS_NAME = "Maaruti Travels";
 export const BUSINESS_TAGLINE = "Your Journey, Our Promise";

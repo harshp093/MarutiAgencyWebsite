@@ -12,7 +12,7 @@ interface ServicePageProps {
   description: string;
   accentColor: string;
   gradient: string;
-  tabId: "flight" | "car" | "tour" | "corporate";
+  tabId: "flight" | "car" | "tour" | "corporate" | "courier";
   icon: string;
   features: { icon: string; title: string; desc: string }[];
   faqs: { q: string; a: string }[];
@@ -59,12 +59,14 @@ export default function ServicePage({
           <p className="text-gray-700 max-w-2xl text-lg leading-relaxed mb-10 font-medium">{description}</p>
         </motion.div>
 
-        {/* Search Bar - Encased in a dark aesthetic wrapper to stand out against cream */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="p-4 rounded-[2.5rem] bg-[#050C14] shadow-2xl relative z-10"
-        >
-          <SearchBar activeTab={tabId} />
-        </motion.div>
+        {/* Search Bar - only for bookable travel services */}
+        {tabId !== "courier" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="p-4 rounded-[2.5rem] bg-[#050C14] shadow-2xl relative z-10"
+          >
+            <SearchBar activeTab={tabId as "flight" | "car" | "tour" | "corporate"} />
+          </motion.div>
+        )}
       </div>
 
       {/* Features grid */}

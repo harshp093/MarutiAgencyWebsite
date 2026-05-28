@@ -144,10 +144,10 @@ export default function ContactPage() {
               style={{ background: "rgba(255,215,0,0.04)", border: "1px solid rgba(255,215,0,0.12)" }}>
               <p className="text-[#FFD700] font-bold text-sm mb-3" style={{ fontFamily: "var(--font-syne)" }}>We Handle Everything</p>
               {[
-                ["🚗", "Car Rental", "/services/car-rental"],
-                ["✈️", "Flight Booking", "/services/flights"],
-                ["🗺️", "Tour Packages", "/services/tours"],
-                ["💼", "Corporate Travel", "/services/corporate-travel"],
+                ["🚗", "Car Rental", "/contact"],
+                ["✈️", "Flight Booking", "/contact"],
+                ["🗺️", "Tour Packages", "/contact"],
+                ["💼", "Corporate Travel", "/contact"],
                 ["📦", "Courier Service", "/services/courier"],
               ].map(([icon, label, href]) => (
                 <Link key={href} href={href}
