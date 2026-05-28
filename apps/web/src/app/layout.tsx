@@ -4,10 +4,31 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans" });
-const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
-const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--font-bebas" });
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  preload: true,
+});
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  display: "swap",
+  preload: false,
+});
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+  preload: false,
+});
+const bebas = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bebas",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "Maaruti Travels | Your Journey, Our Promise",

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import { waUrl, waBookNowMsg } from "@/lib/config";
 import type { ReactNode } from "react";
@@ -28,10 +29,23 @@ export default function ServicePage({
       <div className="relative px-6 md:px-16 lg:px-24 pt-20 pb-16 overflow-hidden">
         {/* VIDEO BACKGROUND */}
         <div className="absolute inset-0 z-0 overflow-hidden">
+          <Image
+            src={tabId === 'flight' || tabId === 'corporate' ? "/hero/airplane/frame_0001.png" : "/hero/car/frame_0001.png"}
+            alt=""
+            aria-hidden="true"
+            fill
+            priority
+            quality={70}
+            sizes="100vw"
+            className="object-cover"
+          />
           <video
             src={tabId === 'flight' || tabId === 'corporate' ? "/hero/airplane.mp4" : "/hero/car.mp4"}
             autoPlay muted loop playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            preload="none"
+            poster={tabId === 'flight' || tabId === 'corporate' ? "/hero/airplane/frame_0001.png" : "/hero/car/frame_0001.png"}
+            className="absolute inset-0 w-full h-full object-cover opacity-0 [animation:fadeInVideo_1s_3s_forwards]"
+            style={{ willChange: "opacity" }}
           />
           {/* Light Overlay to keep dark text readable */}
           <div className="absolute inset-0 bg-[#FDFBF7]/70 backdrop-blur-[2px]" />

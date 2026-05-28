@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { TabId } from "@/components/SearchBar";
 
 // Lazy-load SearchBar to reduce initial JS bundle
@@ -53,6 +54,7 @@ export default function HeroSection() {
   const [scene, setScene] = useState<TabId>("flight");
   const [transitioning, setTransitioning] = useState(false);
   const [videosReady, setVideosReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(true); // default true for SSR safety
 
   const flightVideoRef = useRef<HTMLVideoElement>(null);
   const carVideoRef = useRef<HTMLVideoElement>(null);
@@ -60,11 +62,22 @@ export default function HeroSection() {
   const activeScene = scenes.find((s) => s.id === scene)!;
   const heroText = HERO_TEXT[scene];
 
-  // Preload videos only after page is interactive
+  // Detect mobile — skip video entirely on mobile to save ~26MB bandwidth
   useEffect(() => {
-    const timer = setTimeout(() => setVideosReady(true), 100);
-    return () => clearTimeout(timer);
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
+
+  // On desktop: load videos after 3s (after LCP is already painted)
+  // On mobile: never load videos — poster image only
+  useEffect(() => {
+    if (isMobile) return;
+    const timer = setTimeout(() => setVideosReady(true), 3000);
+    return () => clearTimeout(timer);
+  }, [isMobile]);
 
   useEffect(() => {
     if (!videosReady) return;
@@ -82,6 +95,7 @@ export default function HeroSection() {
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const switchScene = useCallback(
@@ -102,36 +116,63 @@ export default function HeroSection() {
   return (
     <section className="relative w-full min-h-screen overflow-hidden bg-[#050C14]">
 
-      {/* ── VIDEO BACKGROUNDS (only rendered when ready) ── */}
-      {videosReady && (
-        <>
-          <div
-            className="absolute inset-0 z-0 transition-opacity duration-1000"
-            style={{ opacity: scene === "flight" || scene === "corporate" ? 1 : 0 }}
-          >
-            <video
-              ref={flightVideoRef}
-              src="/hero/airplane.mp4"
-              autoPlay muted loop playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ willChange: "opacity" }}
-            />
-          </div>
+      {/* ── POSTER IMAGES — shown immediately, no network cost ── */}
+      {/* Flight/Corporate poster */}
+      <div
+        className="absolute inset-0 z-0 transition-opacity duration-1000"
+        style={{ opacity: scene === "flight" || scene === "corporate" ? 1 : 0 }}
+      >
+        <Image
+          src="/hero/airplane/frame_0001.png"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          quality={75}
+          sizes="100vw"
+          className="object-cover"
+          style={{ display: videosReady ? "none" : "block" }}
+        />
+        {videosReady && (
+          <video
+            ref={flightVideoRef}
+            src="/hero/airplane.mp4"
+            autoPlay muted loop playsInline
+            preload="none"
+            poster="/hero/airplane/frame_0001.png"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ willChange: "opacity" }}
+          />
+        )}
+      </div>
 
-          <div
-            className="absolute inset-0 z-0 transition-opacity duration-1000"
-            style={{ opacity: scene === "car" || scene === "tour" ? 1 : 0 }}
-          >
-            <video
-              ref={carVideoRef}
-              src="/hero/car.mp4"
-              autoPlay muted loop playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ willChange: "opacity" }}
-            />
-          </div>
-        </>
-      )}
+      {/* Car/Tour poster */}
+      <div
+        className="absolute inset-0 z-0 transition-opacity duration-1000"
+        style={{ opacity: scene === "car" || scene === "tour" ? 1 : 0 }}
+      >
+        <Image
+          src="/hero/car/frame_0001.png"
+          alt=""
+          aria-hidden="true"
+          fill
+          quality={75}
+          sizes="100vw"
+          className="object-cover"
+          style={{ display: videosReady ? "none" : "block" }}
+        />
+        {videosReady && (
+          <video
+            ref={carVideoRef}
+            src="/hero/car.mp4"
+            autoPlay muted loop playsInline
+            preload="none"
+            poster="/hero/car/frame_0001.png"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ willChange: "opacity" }}
+          />
+        )}
+      </div>
 
       {/* ── GRADIENT OVERLAYS ── */}
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#050C14] via-[#050C14]/30 to-transparent pointer-events-none" />

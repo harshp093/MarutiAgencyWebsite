@@ -91,6 +91,12 @@ video {
 }
 .float { animation: float 4s ease-in-out infinite; }
 
+/* Deferred video fade-in (used on service pages) */
+@keyframes fadeInVideo {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ─── Input style fixes ─────────────────────────────────────────────────────── */
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.6);
