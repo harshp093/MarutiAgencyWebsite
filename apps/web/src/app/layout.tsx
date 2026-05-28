@@ -3,6 +3,7 @@ import { DM_Sans, Syne, Playfair_Display, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -50,6 +51,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <WhatsAppButton />
+        <SpeedInsights />
       </body>
     </html>
   );
